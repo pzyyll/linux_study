@@ -1,16 +1,16 @@
 #ifndef LINUX_STU_EPOLL_CLIENT_H
 #define LINUX_STU_EPOLL_CLIENT_H
 
-#include <sys/epoll>
+#include <sys/epoll.h>
+#include <iostream>
 
-class Epoll_Client {
+class EpollClient {
 public:
-    Epoll_Client();
-    ~Epoll_Client();
+    EpollClient();
+    ~EpollClient();
 
-    int Get();
 private:
 
-}
+};
 
 #endif //LINUX_STU_EPOLL_CLIENT_H

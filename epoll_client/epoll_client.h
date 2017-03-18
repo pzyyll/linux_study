@@ -35,39 +35,45 @@ public:
 private:
     const static unsigned int kRwTimeOut = 500;
     const static unsigned int kConnTimeOut = 300;
-
 public:
     EpollClient();
 
     ~EpollClient();
 
-    int Init(TYPE_IPADDR af, const char *ip, unsigned int port);
+    int Init(const char *ip, unsigned int port, TYPE_IPADDR af = IPV4, const unsigned int rw_time = kRwTimeOut, const unsigned conn_time = kConnTimeOut);
 
     //int Connect();
     int Send(const char *buf, unsigned int bsize);
     int Recv(char *buf, unsigned int &bsize, unsigned int excp_len = 0);
 
     int ReconnSvr();
-    int Close();
     bool CheckConn() { return check_conn_; }
 
     int SetFlagBlock(int fd, FLAGS_BLOCK flag = BLOCK);
     char *GetErrMsg() { return errmsg_; }
 
-    void setRw_time_out(unsigned int rw_time_out);
-    void setConnect_time_out(unsigned int connect_time_out);
+    void set_rw_time_out(unsigned int rw_time_out);
+    void set_connect_time_out(unsigned int connect_time_out);
 private:
-    int connect(int fd, const struct sockaddr *addr, unsigned int len);
+    int InitSocket();
+    int ToFillSocketAddr();
+    int Connect();
+    void CloseSocket();
 
     unsigned int writen(const void *vptr, unsigned int n);
     unsigned int readn(void *vptr, unsigned int nbyes);
 
 private:
     char errmsg_[1024];
-    bool check_conn_;
 
-    int fd;
+    char ip_[128];
+    TYPE_IPADDR type_addr_;
+    int port_;
+
+    int socket_;
     struct sockaddr svraddr_;
+    bool socket_inited_;
+    bool check_conn_;
 
     unsigned int rw_time_out_;
     unsigned int connect_time_out_;

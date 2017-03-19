@@ -159,7 +159,7 @@ int EpollClient::Connect()
                 case -1:
                     //若被外部中断继续等待
                     if (errno != EINTR) {
-                        snprintf(errmsg_, sizeof(errmsg_), "%s", strerror(errno));
+                        snprintf(errmsg_, sizeof(errmsg_), "other err:%s", strerror(errno));
                         return -1;
                     }
                     continue;

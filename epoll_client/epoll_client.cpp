@@ -37,7 +37,7 @@ int EpollClient::Init(const char *ip, unsigned int port, TYPE_IPADDR af, const u
 
     if (Connect() < 0) {
         ret = -1;
-        snprintf(errmsg_, sizeof(errmsg_), "connect to svr fail");
+        //snprintf(errmsg_, sizeof(errmsg_), "connect to svr fail");
         return ret;
     }
 

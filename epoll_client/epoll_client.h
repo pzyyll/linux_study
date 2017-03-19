@@ -49,7 +49,7 @@ public:
     int ReconnSvr();
     bool CheckConn() { return check_conn_; }
 
-    int SetFlagBlock(int fd, FLAGS_BLOCK flag = BLOCK);
+    int SetFlagBlock(FLAGS_BLOCK flag = BLOCK);
     char *GetErrMsg() { return errmsg_; }
 
     void set_rw_time_out(unsigned int rw_time_out);

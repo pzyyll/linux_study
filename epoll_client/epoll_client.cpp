@@ -116,7 +116,10 @@ int EpollClient::ReconnSvr()
 int EpollClient::Connect()
 {
     //非阻塞连接
-    if (SetFlagBlock(socket_, NON_BLOCK) < 0)
+    if (InitSocket() < 0) {
+        return -1;
+    }
+    if (SetFlagBlock(NON_BLOCK) < 0)
         return -1;
 
     if (ToFillSocketAddr() < 0) {
@@ -196,8 +199,13 @@ int EpollClient::Connect()
     return 0;
 }
 
-int EpollClient::SetFlagBlock(int fd, EpollClient::FLAGS_BLOCK flag)
+int EpollClient::SetFlagBlock(EpollClient::FLAGS_BLOCK flag)
 {
+    if (!socket_inited_) {
+        snprintf(errmsg_, sizeof(errmsg_), "socket fd not init.");
+        return -1;
+    }
+
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0) {
         snprintf(errmsg_, sizeof(errmsg_), "set flag block: get flasg fail.");
@@ -208,7 +216,7 @@ int EpollClient::SetFlagBlock(int fd, EpollClient::FLAGS_BLOCK flag)
 
     if (fcntl(fd, F_SETFL, flags) < 0) {
         snprintf(errmsg_, sizeof(errmsg_), "set flag block fail.(%d)", flag);
-        return -2;
+        return -1;
     }
 
     return 0;

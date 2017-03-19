@@ -34,7 +34,6 @@ int EpollClient::Init(const char *ip, unsigned int port, TYPE_IPADDR af, const u
     snprintf(ip_, sizeof(ip_), "%s", ip);
 
     if (Connect() < 0) {
-        //snprintf(errmsg_, sizeof(errmsg_), "connect to svr fail");
         return -1;
     }
 
@@ -46,6 +45,11 @@ int EpollClient::Send(const char *buf, unsigned int bsize)
 {
     if (!CheckConn())
         return -1;
+
+    if (NULL == buf) {
+        SetErrMsg("send buffer is null.");
+        return -1;
+    }
     //todo
     writen(buf, bsize);
 
@@ -63,7 +67,7 @@ int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
     return bsize;
 }
 
-unsigned int EpollClient::writen(const void *vptr, unsigned int n)
+int EpollClient::writen(const void *vptr, unsigned int n)
 {
     unsigned int nleft = n;
     unsigned int nwriten = 0;
@@ -83,7 +87,7 @@ unsigned int EpollClient::writen(const void *vptr, unsigned int n)
     return n;
 }
 
-unsigned int EpollClient::readn(void *vptr, unsigned int nbyes)
+int EpollClient::readn(void *vptr, int nbyes)
 {
     int nleft = nbyes;
     int nread = 0;
@@ -95,12 +99,12 @@ unsigned int EpollClient::readn(void *vptr, unsigned int nbyes)
                 nread = 0;
             else
                 return -1;
-        } else if (0 == nread )
+        } else if (0 == nread)
             break;              // EOF
         nleft -= nread;
         ptr += nread;
     }
-    return nbyes - nleft;
+    return (nbyes - nleft);
 }
 
 int EpollClient::ReconnSvr()
@@ -120,17 +124,17 @@ int EpollClient::Connect()
         return -1;
 
     if (ToFillSocketAddr() < 0) {
-        snprintf(errmsg_, sizeof(errmsg_), "ip to socket addr struct fail.");
+        SetErrMsg("ip to socket addr struct fail.");
         return -1;
     }
 
     bool check_conn = false;
     errno = 0;
     //尝试连接，若服务器与客户端在同一主机上，往往会立即连接完成
-    if (connect(socket_, &svraddr_, sizeof(svraddr_)) < 0) {
+    if (connect(socket_, reinterpret_cast<struct sockaddr *>(&svraddr_), sizeof(svraddr_)) < 0) {
         //EINPROGRESS表示连接正在进行中，若errno!=EINPROGRESS
         if (errno != EINPROGRESS) {
-            snprintf(errmsg_, sizeof(errmsg_), "connect fail:%s", strerror(errno));
+            SetErrMsg("connect fail:%s", strerror(errno));
             return -1;
         } else {
             //检查连接是否成功
@@ -141,7 +145,7 @@ int EpollClient::Connect()
     if (check_conn) {
         int epoll_fd = epoll_create1(EPOLL_CLOEXEC);
         if (epoll_fd < 0) {
-            snprintf(errmsg_, sizeof(errmsg_), "create epoll_fd fail:%s.", strerror(errno));
+            SetErrMsg("create epoll_fd fail:%s.", strerror(errno));
             return -1;
         }
 
@@ -149,7 +153,7 @@ int EpollClient::Connect()
         ev.data.fd = socket_;
         ev.events = EPOLLOUT | EPOLLET;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_, &ev) < 0) {
-            snprintf(errmsg_, sizeof(errmsg_), "epoll event add fail:%s.", strerror(errno));
+            SetErrMsg("epoll event add fail:%s.", strerror(errno));
             return -1;
         }
 
@@ -159,14 +163,14 @@ int EpollClient::Connect()
                 case -1:
                     //若被外部中断继续等待
                     if (errno != EINTR) {
-                        snprintf(errmsg_, sizeof(errmsg_), "other err:%s", strerror(errno));
+                        SetErrMsg("other err:%s", strerror(errno));
                         return -1;
                     }
                     continue;
                 case 0:
                     //timeout
                     errno = ETIMEDOUT;
-                    snprintf(errmsg_, sizeof(errmsg_), "connect time out");
+                    SetErrMsg("connect time out");
                     return -1;
                 default:
                     //这里只注册了socket_,发生事件也只能是它??
@@ -175,19 +179,19 @@ int EpollClient::Connect()
                         int error = 0;
                         socklen_t len = sizeof(error);
                         if (getsockopt(socket_, SOL_SOCKET, SO_ERROR, (void *)(&error), &len) < 0) {
-                            snprintf(errmsg_, sizeof(errmsg_), "%s", strerror(errno)); //Solaris pending error
+                            SetErrMsg("%s", strerror(errno)); //Solaris pending error
                             return -1;
                         }
 
                         if (0 != error) {
-                            snprintf(errmsg_, sizeof(errmsg_), "getsockopt SOL_SOCKET SO_ERROR, error=%d", error);
+                            SetErrMsg("getsockopt SOL_SOCKET SO_ERROR, error=%d", error);
                             return -1;
                         }
 
                         return 0;
                     } else {
                         //黑人问号??
-                        snprintf(errmsg_, sizeof(errmsg_), "unkown err");
+                        SetErrMsg("unkown err");
                         return -1;
                     }
             }
@@ -199,20 +203,20 @@ int EpollClient::Connect()
 int EpollClient::SetFlagBlock(EpollClient::FLAGS_BLOCK flag)
 {
     if (!socket_inited_) {
-        snprintf(errmsg_, sizeof(errmsg_), "socket fd not init.");
+        SetErrMsg("socket fd not init.");
         return -1;
     }
 
     int flags = fcntl(socket_, F_GETFL, 0);
     if (flags < 0) {
-        snprintf(errmsg_, sizeof(errmsg_), "set flag block: get flasg fail.");
+        SetErrMsg("set flag block: get flasg fail.");
         return -1;
     }
 
     (BLOCK == flag) ? (flags &= ~O_NONBLOCK) : (flags |= O_NONBLOCK);
 
     if (fcntl(socket_, F_SETFL, flags) < 0) {
-        snprintf(errmsg_, sizeof(errmsg_), "set flag block fail.(%d)", flag);
+        SetErrMsg("set flag block fail.(%d)", flag);
         return -1;
     }
 
@@ -234,7 +238,7 @@ int EpollClient::InitSocket()
     if (!socket_inited_) {
         socket_ = socket(type_addr_, SOCK_STREAM, 0);
         if (socket_ < 0) {
-            snprintf(errmsg_, sizeof(errmsg_), "get socket socket_ fail.");
+            SetErrMsg("get socket socket_ fail.");
             return -1;
         }
         socket_inited_ = true;
@@ -259,7 +263,7 @@ int EpollClient::ToFillSocketAddr()
         //inet_aton(ip, &svraddr_.sin_addr);
 
         if (inet_pton(type_addr_, ip_, &addrv4->sin_addr) < 0) {
-            snprintf(errmsg_, sizeof(errmsg_), "IP invalid.");
+            SetErrMsg("IP invalid.");
             return -1;
         }
     } else {
@@ -276,4 +280,12 @@ void EpollClient::CloseSocket()
         close(socket_);
         socket_inited_ = false;
     }
+}
+
+void EpollClient::SetErrMsg(const char *s, ...)
+{
+    va_list args;
+    va_start(args, s);
+    vsnprintf(errmsg_, sizeof(errmsg_), s, args);
+    va_end(args);
 }

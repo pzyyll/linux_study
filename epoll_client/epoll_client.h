@@ -3,7 +3,7 @@
  * @auth    zhilicai
  * @E-mail  pzyyll@gmail.com
  * @brief   tcp client by epoll im
- *
+ *          有点大才小用的感觉，用poll实现还更简单，也没差多少>_<
  */
 
 #ifndef LINUX_STU_EPOLL_CLIENT_H
@@ -18,6 +18,7 @@
 #include <sys/fcntl.h>
 #include <cstring>
 #include <cstdio>
+#include <cstdarg>
 
 static const unsigned int MAX_BUF_LEN = 2048;
 
@@ -58,9 +59,10 @@ private:
     int ToFillSocketAddr();
     int Connect();
     void CloseSocket();
+    void SetErrMsg(const char *s, ...);
 
-    unsigned int writen(const void *vptr, unsigned int n);
-    unsigned int readn(void *vptr, unsigned int nbyes);
+    int writen(const void *vptr, unsigned int n);
+    int readn(void *vptr, int nbyes);
 
 private:
     char errmsg_[1024];
@@ -70,7 +72,7 @@ private:
     int port_;
 
     int socket_;
-    struct sockaddr svraddr_;
+    struct sockaddr_storage svraddr_;
     bool socket_inited_;
     bool check_conn_;
 

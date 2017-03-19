@@ -15,15 +15,21 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    char buf[1024] = "abcd";
-    cli.Send(buf, strlen(buf));
+	int cnt = 0;
+	for (;;) {
+		cout << "===" << cnt << "===" << endl;
+		char buf[1024] = "abcd";
+		snprintf(buf, sizeof(buf), "abcd%d", cnt++);
+		cli.Send(buf, strlen(buf));
 
-    char frbuf[1024] = {0};
-    unsigned int len = sizeof(frbuf);
-    cli.set_rw_time_out(0);
-    cli.Recv(frbuf, len);
-
-    cout << frbuf << ":";
-    cout << len << endl;
+		char frbuf[1024] = {0};
+		unsigned int len = sizeof(frbuf);
+		cli.set_rw_time_out(0);
+		if (cli.Recv(frbuf, len) == 0) {
+			cout << frbuf << ":";
+			cout << len << endl;
+		}
+		sleep(1);
+	}
     return 0;
 }

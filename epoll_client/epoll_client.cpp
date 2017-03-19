@@ -62,10 +62,49 @@ int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
     if (!CheckConn())
         return -1;
 
-    //todo
-    bsize = readn(buf, bsize);
+    struct epoll_event ev;
+    ev.data.fd = socket_;
+    ev.events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0 ) {
+        SetErrMsg("epoll ctl mod fial(%s).", strerror(errno));
+        return -1;
+    }
 
-    return bsize;
+    for (;;) {
+        errno = 0;
+        switch (epoll_wait(epoll_fd_, &evs_, 1, rw_time_out_)) {
+            case -1:
+                if (EINTR != errno) {
+                    SetErrMsg("other errno rw epoll wait(%s).", strerror(errno));
+                    check_conn_ = false;
+                    return -1;
+                }
+                continue;
+            case 0:
+                errno = ETIMEDOUT;
+                SetErrMsg("epoll wait timeout.");
+                check_conn_ = false;
+                return -1;
+            default:
+                if (evs_.events & EPOLLIN) {
+                    //do_recv
+                    if (excp_len > 0) {
+                        bsize = readn(buf, excp_len);
+                    } else {
+                        bsize = readn(buf, bsize);
+                    }
+                    return 0;
+                } else {
+                    //黑人问号??
+                    SetErrMsg("unkown err for rw epoll_wait.");
+                    check_conn_ = false;
+                    return -1;
+                }
+                //break;
+        }
+    }
+
+    //return 0;
 }
 
 int EpollClient::writen(const void *vptr, unsigned int n)
@@ -99,7 +138,7 @@ int EpollClient::readn(void *vptr, int nbyes)
             if (errno == EINTR)
                 nread = 0;
             else
-                return -1;
+                break;
         } else if (0 == nread)
             break;              // EOF
         nleft -= nread;

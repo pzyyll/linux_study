@@ -11,11 +11,13 @@
 EpollClient::EpollClient()
         : type_addr_(IPV4),
           port_(0),
-          socket_(0),
+          socket_(-1),
           socket_inited_(false),
           check_conn_(false),
           rw_time_out_(kRwTimeOut),
-          connect_time_out_(kConnTimeOut)
+          connect_time_out_(kConnTimeOut),
+          epoll_fd_(-1),
+          evs_(NULL)
 {
     memset(errmsg_, 0, sizeof(errmsg_));
     memset(ip_, 0, sizeof(ip_));
@@ -143,23 +145,23 @@ int EpollClient::Connect()
     }
 
     if (check_conn) {
-        int epoll_fd = epoll_create1(EPOLL_CLOEXEC);
-        if (epoll_fd < 0) {
+        epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
+        if (epoll_fd_ < 0) {
             SetErrMsg("create epoll_fd fail:%s.", strerror(errno));
             return -1;
         }
 
-        struct epoll_event ev, evs;
+        struct epoll_event ev;
         ev.data.fd = socket_;
         ev.events = EPOLLOUT | EPOLLET;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_, &ev) < 0) {
+        if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, socket_, &ev) < 0) {
             SetErrMsg("epoll event add fail:%s.", strerror(errno));
             return -1;
         }
 
         for (;;) {
             errno = 0;
-            switch(epoll_wait(epoll_fd, &evs, 1, connect_time_out_)) {
+            switch(epoll_wait(epoll_fd_, evs_, 1, connect_time_out_)) {
                 case -1:
                     //若被外部中断继续等待
                     if (errno != EINTR) {
@@ -175,7 +177,7 @@ int EpollClient::Connect()
                 default:
                     //这里只注册了socket_,发生事件也只能是它??
                     //当连接成功时，socket_变为可写，若发生错误，socket_也会变为可读可写，通过获取套接字选项查看是否发生错误
-                    if (evs.events & EPOLLOUT) {
+                    if (evs_->events & EPOLLOUT) {
                         int error = 0;
                         socklen_t len = sizeof(error);
                         if (getsockopt(socket_, SOL_SOCKET, SO_ERROR, (void *)(&error), &len) < 0) {
@@ -279,6 +281,16 @@ void EpollClient::CloseSocket()
     if (socket_inited_) {
         close(socket_);
         socket_inited_ = false;
+    }
+
+    if (epoll_fd_ >= 0) {
+        close(epoll_fd_);
+        epoll_fd_ = -1;
+    }
+
+    if (NULL != evs_) {
+        delete [] evs_;
+        evs_ = NULL;
     }
 }
 

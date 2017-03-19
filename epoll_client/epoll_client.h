@@ -79,6 +79,9 @@ private:
     unsigned int rw_time_out_;
     unsigned int connect_time_out_;
 
+    int epoll_fd_;
+    struct epoll_event *evs_;
+
 /*
     struct SBUF {
         SBUF() : eptr(0), bptr(0) { }

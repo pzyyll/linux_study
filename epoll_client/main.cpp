@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 
     char frbuf[1024] = {0};
     unsigned int len = sizeof(frbuf);
+
     cli.Recv(frbuf, len);
 
     cout << frbuf << endl;

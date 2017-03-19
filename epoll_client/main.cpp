@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     EpollClient cli;
 
-    cli.Init(EpollClient::IPV4, "127.0.0.1", 9877);
+    cli.Init("127.0.0.1", 9877);
 
     char buf[1024] = "abcd";
     cli.Send(buf, strlen(buf));

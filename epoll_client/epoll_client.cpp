@@ -170,7 +170,7 @@ int EpollClient::Connect()
                     return -1;
                 default:
                     //这里只注册了socket_,发生事件也只能是它??
-                    //当连接成功时，socket_变为可写，若发生错误，socket_也会变为可读可写，此时
+                    //当连接成功时，socket_变为可写，若发生错误，socket_也会变为可读可写，通过获取套接字选项查看是否发生错误
                     if (evs.events & EPOLLOUT) {
                         int error = 0;
                         socklen_t len = sizeof(error);

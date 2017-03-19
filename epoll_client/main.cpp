@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 		if (cli.Recv(frbuf, len) == 0) {
 			cout << frbuf << ":";
 			cout << len << endl;
+            //do_echo
 		}
 		sleep(1);
 	}

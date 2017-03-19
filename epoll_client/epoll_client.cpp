@@ -51,10 +51,42 @@ int EpollClient::Send(const char *buf, unsigned int bsize)
         SetErrMsg("send buffer is null.");
         return -1;
     }
-    //todo
-    writen(buf, bsize);
 
-    return bsize;
+    struct epoll_event ev;
+    ev.data.fd = socket_;
+    ev.events = EPOLLOUT | EPOLLET;
+    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0) {
+        SetErrMsg("epoll ctl mod fial(%s).", strerror(errno));
+        return -1;
+    }
+
+    for (;;) {
+        errno = 0;
+        switch(epoll_wait(epoll_fd_, &evs_, 1, rw_time_out_)) {
+            case -1:
+                if (EINTR != errno) {
+                    SetErrMsg("other errno rw epoll wait(%s).", strerror(errno));
+                    check_conn_ = false;
+                    return -1;
+                }
+                continue;
+            case 0:
+                errno = ETIMEDOUT;
+                SetErrMsg("rw epoll timeout.");
+                return -1;
+            default:
+                if (evs_.events & EPOLLOUT) {
+                    //do send
+                    writen(buf, bsize);
+                    return 0;
+                } else {
+                    //黑人问号??
+                    SetErrMsg("unkown err for rw epoll_wait.");
+                    check_conn_ = false;
+                    return -1;
+                }
+        }
+    }
 }
 
 int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
@@ -62,10 +94,15 @@ int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
     if (!CheckConn())
         return -1;
 
+    if (NULL == buf) {
+        SetErrMsg("recv buffer is null.");
+        return -1;
+    }
+
     struct epoll_event ev;
     ev.data.fd = socket_;
     ev.events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0 ) {
+    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0) {
         SetErrMsg("epoll ctl mod fial(%s).", strerror(errno));
         return -1;
     }

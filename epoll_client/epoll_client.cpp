@@ -130,7 +130,7 @@ int EpollClient::Connect()
     if (connect(socket_, &svraddr_, sizeof(svraddr_)) < 0) {
         //EINPROGRESS表示连接正在进行中，若errno!=EINPROGRESS
         if (errno != EINPROGRESS) {
-            snprintf(errmsg_, sizeof(errmsg_), "%s", strerror(errno));
+            snprintf(errmsg_, sizeof(errmsg_), "connect fail:%s", strerror(errno));
             return -1;
         } else {
             //检查连接是否成功

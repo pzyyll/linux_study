@@ -20,7 +20,9 @@ int main(int argc, char *argv[])
 		cout << "===" << cnt << "===" << endl;
 		char buf[1024] = "abcd";
 		snprintf(buf, sizeof(buf), "abcd%d", cnt++);
-		cli.Send(buf, strlen(buf));
+		if (cli.Send(buf, strlen(buf)) != 0) {
+            cout << cli.GetErrMsg() << endl;
+        }
 
 		char frbuf[1024] = {0};
 		unsigned int len = sizeof(frbuf);
@@ -29,7 +31,9 @@ int main(int argc, char *argv[])
 			cout << frbuf << ":";
 			cout << len << endl;
             //do_echo
-		}
+		} else {
+            cout << cli.GetErrMsg() << endl;
+        }
 		sleep(1);
 	}
     return 0;

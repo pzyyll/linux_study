@@ -85,8 +85,8 @@ unsigned int EpollClient::writen(const void *vptr, unsigned int n)
 
 unsigned int EpollClient::readn(void *vptr, unsigned int nbyes)
 {
-    unsigned int nleft = nbyes;
-    unsigned int nread = 0;
+    int nleft = nbyes;
+    int nread = 0;
     char *ptr = static_cast<char *>(vptr);
 
     while (nleft > 0) {

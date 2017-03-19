@@ -80,7 +80,7 @@ private:
     unsigned int connect_time_out_;
 
     int epoll_fd_;
-    struct epoll_event *evs_;
+    struct epoll_event evs_;
 
 /*
     struct SBUF {

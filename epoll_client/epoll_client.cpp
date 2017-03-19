@@ -28,21 +28,18 @@ EpollClient::~EpollClient()
 
 int EpollClient::Init(const char *ip, unsigned int port, TYPE_IPADDR af, const unsigned int rw_time, const unsigned conn_time)
 {
-    int ret = 0;
-
     rw_time_out_ = rw_time;
     connect_time_out_ = conn_time;
     port_ = port;
     snprintf(ip_, sizeof(ip_), "%s", ip);
 
     if (Connect() < 0) {
-        ret = -1;
         //snprintf(errmsg_, sizeof(errmsg_), "connect to svr fail");
-        return ret;
+        return -1;
     }
 
     check_conn_ = true;
-    return ret;
+    return 0;
 }
 
 int EpollClient::Send(const char *buf, unsigned int bsize)
@@ -93,7 +90,7 @@ unsigned int EpollClient::readn(void *vptr, unsigned int nbyes)
     char *ptr = static_cast<char *>(vptr);
 
     while (nleft > 0) {
-        if ( (nread = read(socket_, ptr, nleft)) < 0) {
+        if ( (nread = read(socket_, ptr, nleft) ) < 0) {
             if (errno == EINTR)
                 nread = 0;
             else
@@ -266,7 +263,7 @@ int EpollClient::ToFillSocketAddr()
             return -1;
         }
     } else {
-        //IPv6
+        //IPv6 todo
         return -1;
     }
 
@@ -276,7 +273,7 @@ int EpollClient::ToFillSocketAddr()
 void EpollClient::CloseSocket()
 {
     if (socket_inited_) {
-        close(socket_inited_);
+        close(socket_);
         socket_inited_ = false;
     }
 }

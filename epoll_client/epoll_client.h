@@ -42,7 +42,6 @@ public:
 
     int Init(const char *ip, unsigned int port, TYPE_IPADDR af = IPV4, const unsigned int rw_time = kRwTimeOut, const unsigned conn_time = kConnTimeOut);
 
-    //int Connect();
     int Send(const char *buf, unsigned int bsize);
     int Recv(char *buf, unsigned int &bsize, unsigned int excp_len = 0);
 

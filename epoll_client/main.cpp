@@ -20,10 +20,10 @@ int main(int argc, char *argv[])
 
     char frbuf[1024] = {0};
     unsigned int len = sizeof(frbuf);
-
+    cli.set_rw_time_out(0);
     cli.Recv(frbuf, len);
 
-    cout << frbuf << endl;
-
+    cout << frbuf << ":";
+    cout << len << endl;
     return 0;
 }

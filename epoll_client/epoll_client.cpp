@@ -206,7 +206,7 @@ int EpollClient::SetFlagBlock(EpollClient::FLAGS_BLOCK flag)
         return -1;
     }
 
-    int flags = fcntl(fd, F_GETFL, 0);
+    int flags = fcntl(socket_, F_GETFL, 0);
     if (flags < 0) {
         snprintf(errmsg_, sizeof(errmsg_), "set flag block: get flasg fail.");
         return -1;
@@ -214,7 +214,7 @@ int EpollClient::SetFlagBlock(EpollClient::FLAGS_BLOCK flag)
 
     (BLOCK == flag) ? (flags &= ~O_NONBLOCK) : (flags |= O_NONBLOCK);
 
-    if (fcntl(fd, F_SETFL, flags) < 0) {
+    if (fcntl(socket_, F_SETFL, flags) < 0) {
         snprintf(errmsg_, sizeof(errmsg_), "set flag block fail.(%d)", flag);
         return -1;
     }

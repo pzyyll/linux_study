@@ -10,10 +10,14 @@ int main(int argc, char *argv[])
 {
     EpollClient cli;
 
+    cout << argv[0] << endl;
+
     if (cli.Init("127.0.0.1", 9877) < 0) {
         cout << cli.GetErrMsg() << endl;
         return -1;
     }
+
+    cli.set_rw_time_out(0);
 
 	int cnt = 0;
 	for (;;) {
@@ -26,7 +30,6 @@ int main(int argc, char *argv[])
 
 		char frbuf[1024] = {0};
 		unsigned int len = sizeof(frbuf);
-		cli.set_rw_time_out(0);
 		if (cli.Recv(frbuf, len) == 0) {
 			cout << frbuf << ":";
 			cout << len << endl;

@@ -44,9 +44,6 @@ int EpollClient::Init(const char *ip, unsigned int port, TYPE_IPADDR af, const u
 
 int EpollClient::Send(const char *buf, unsigned int bsize)
 {
-    if (!CheckConn())
-        return -1;
-
     if (NULL == buf) {
         SetErrMsg("send buffer is null.");
         return -1;
@@ -91,9 +88,6 @@ int EpollClient::Send(const char *buf, unsigned int bsize)
 
 int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
 {
-    if (!CheckConn())
-        return -1;
-
     if (NULL == buf) {
         SetErrMsg("recv buffer is null.");
         return -1;
@@ -120,7 +114,6 @@ int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len)
             case 0:
                 errno = ETIMEDOUT;
                 SetErrMsg("epoll wait timeout.");
-                check_conn_ = false;
                 return -1;
             default:
                 if (evs_.events & EPOLLIN) {

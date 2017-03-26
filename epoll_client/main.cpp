@@ -19,25 +19,25 @@ int main(int argc, char *argv[])
 
     cli.set_rw_time_out(0);
 
-	int cnt = 0;
-	for (;;) {
-		cout << "===" << cnt << "===" << endl;
-		char buf[1024] = "abcd";
-		snprintf(buf, sizeof(buf), "abcd%d", cnt++);
-		if (cli.Send(buf, strlen(buf)) != 0) {
+    int cnt = 0;
+    for (;;) {
+        cout << "===" << cnt << "===" << endl;
+        char buf[1024] = "abcd";
+        snprintf(buf, sizeof(buf), "abcd%d", cnt++);
+        if (cli.Send(buf, strlen(buf)) <= 0) {
             cout << cli.GetErrMsg() << endl;
         }
 
-		char frbuf[1024] = {0};
-		unsigned int len = sizeof(frbuf);
-		if (cli.Recv(frbuf, len) == 0) {
-			cout << frbuf << ":";
-			cout << len << endl;
+        char frbuf[1024] = {0};
+        unsigned int len = sizeof(frbuf);
+        if (cli.Recv(frbuf, len) > 0) {
+            cout << frbuf << ":";
+            cout << len << endl;
             //do_echo
-		} else {
+        } else {
             cout << cli.GetErrMsg() << endl;
         }
-		sleep(1);
-	}
+        sleep(1);
+    }
     return 0;
 }

@@ -58,48 +58,17 @@ int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len) {
         return -1;
     }
 
-    struct epoll_event ev;
-    ev.data.fd = socket_;
-    ev.events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0) {
-        SetErrMsg("epoll ctl mod fial(%s).", strerror(errno));
+    if (ReadWait(rw_time_out_) < 0)
         return -1;
+
+    //do_recv
+    if (excp_len > 0) {
+        bsize = Readn(buf, excp_len);
+    } else {
+        bsize = Readn(buf, bsize);
     }
 
-    for (;;) {
-        errno = 0;
-        switch (epoll_wait(epoll_fd_, &evs_, 1, rw_time_out_)) {
-            case -1:
-                if (EINTR != errno) {
-                    SetErrMsg("other errno rw epoll wait(%s).", strerror(errno));
-                    check_conn_ = false;
-                    return -1;
-                }
-                continue;
-            case 0:
-                errno = ETIMEDOUT;
-                SetErrMsg("epoll wait timeout.");
-                return -1;
-            default:
-                if (evs_.events & EPOLLIN) {
-                    //do_recv
-                    if (excp_len > 0) {
-                        bsize = Readn(buf, excp_len);
-                    } else {
-                        bsize = Readn(buf, bsize);
-                    }
-                    return 0;
-                } else {
-                    //黑人问号??
-                    SetErrMsg("unkown err for rw epoll_wait.");
-                    check_conn_ = false;
-                    return -1;
-                }
-                //break;
-        }
-    }
-
-    //return 0;
+    return bsize;
 }
 
 int EpollClient::Writen(const void *vptr, unsigned int n) {

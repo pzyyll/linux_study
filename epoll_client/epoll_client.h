@@ -64,8 +64,6 @@ private:
     int Writen(const void *vptr, unsigned int n);
     int Readn(void *vptr, int nbyes);
 
-    int ModReadEvent();
-    int ModWriteEvent();
     int CtlEpollEvent(int op, int events);
 
     int ConnectWait(unsigned int time_out);

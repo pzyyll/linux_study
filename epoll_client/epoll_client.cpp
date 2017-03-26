@@ -46,41 +46,10 @@ int EpollClient::Send(const char *buf, unsigned int bsize) {
         return -1;
     }
 
-    struct epoll_event ev;
-    ev.data.fd = socket_;
-    ev.events = EPOLLOUT | EPOLLET;
-    if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, socket_, &ev) < 0) {
-        SetErrMsg("epoll ctl mod fial(%s).", strerror(errno));
+    if (WriteWait(rw_time_out_) != 0)
         return -1;
-    }
 
-    for (;;) {
-        errno = 0;
-        switch(epoll_wait(epoll_fd_, &evs_, 1, rw_time_out_)) {
-            case -1:
-                if (EINTR != errno) {
-                    SetErrMsg("other errno rw epoll wait(%s).", strerror(errno));
-                    check_conn_ = false;
-                    return -1;
-                }
-                continue;
-            case 0:
-                errno = ETIMEDOUT;
-                SetErrMsg("rw epoll timeout.");
-                return -1;
-            default:
-                if (evs_.events & EPOLLOUT) {
-                    //do send
-                    Writen(buf, bsize);
-                    return 0;
-                } else {
-                    //黑人问号??
-                    SetErrMsg("unkown err for rw epoll_wait.");
-                    check_conn_ = false;
-                    return -1;
-                }
-        }
-    }
+    return Writen(buf, bsize);
 }
 
 int EpollClient::Recv(char *buf, unsigned int &bsize, unsigned int excp_len) {
@@ -149,7 +118,7 @@ int EpollClient::Writen(const void *vptr, unsigned int n) {
         nleft -= nwriten;
         ptr += nwriten;
     }
-    return n;
+    return (n - nleft);
 }
 
 int EpollClient::Readn(void *vptr, int nbyes) {
@@ -176,7 +145,6 @@ int EpollClient::ReconnSvr() {
     return Connect();
 }
 
-//todo 负责逻辑太多，可以再拆分，毕竟超过40行了...
 int EpollClient::Connect() {
     //非阻塞连接
     if (InitSocket() < 0) {
@@ -317,14 +285,6 @@ void EpollClient::SetErrMsg(const char *s, ...) {
     va_end(args);
 }
 
-int EpollClient::ModReadEvent() {
-    return CtlEpollEvent(EPOLL_CTL_MOD, EPOLLIN);
-}
-
-int EpollClient::ModWriteEvent() {
-    return CtlEpollEvent(EPOLL_CTL_MOD, EPOLLOUT);
-}
-
 int EpollClient::CtlEpollEvent(int op, int events) {
     struct epoll_event ev;
     ev.data.fd = socket_;
@@ -343,13 +303,13 @@ int EpollClient::ConnectWait(unsigned int time_out) {
 }
 
 int EpollClient::ReadWait(unsigned int time_out) {
-    if (ModReadEvent() < 0)
+    if (CtlEpollEvent(EPOLL_CTL_MOD, EPOLLIN) < 0)
         return -1;
     return EpollWait(EPOLLIN, time_out);
 }
 
 int EpollClient::WriteWait(unsigned int time_out) {
-    if (ModWriteEvent() < 0)
+    if (CtlEpollEvent(EPOLL_CTL_MOD, EPOLLOUT) < 0)
         return -1;
     return EpollWait(EPOLLOUT, time_out);
 }

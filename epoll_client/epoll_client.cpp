@@ -198,6 +198,12 @@ int EpollClient::Connect() {
             SetErrMsg("connect fail:%s", strerror(errno));
             return -1;
         } else {
+            epoll_fd_ = epoll_create1(EPOLL_CLOEXEC);
+            if (epoll_fd_ < 0) {
+                SetErrMsg("create epoll_fd fail:%s", strerror(errno));
+                return -1;
+            }
+
             //检查连接是否成功
             if (ConnectWait(connect_time_out_) != 0)
                 return -1;

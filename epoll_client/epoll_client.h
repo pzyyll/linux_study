@@ -49,7 +49,7 @@ public:
     int ReconnSvr();
     bool CheckConn() { return check_conn_; }
 
-    int SetFlagBlock(FLAGS_BLOCK flag = BLOCK);
+    int SetBlockFlag(FLAGS_BLOCK flag = BLOCK);
     char *GetErrMsg() { return errmsg_; }
 
     void set_rw_time_out(unsigned int rw_time_out);
@@ -61,8 +61,17 @@ private:
     void CloseSocket();
     void SetErrMsg(const char *s, ...);
 
-    int writen(const void *vptr, unsigned int n);
-    int readn(void *vptr, int nbyes);
+    int Writen(const void *vptr, unsigned int n);
+    int Readn(void *vptr, int nbyes);
+
+    int ModReadEvent();
+    int ModWriteEvent();
+    int CtlEpollEvent(int op, int events);
+
+    int ConnectWait(unsigned int time_out);
+    int ReadWait(unsigned int time_out);
+    int WriteWait(unsigned int time_out);
+    int EpollWait(int events, unsigned int time_out);
 
 private:
     char errmsg_[1024];
